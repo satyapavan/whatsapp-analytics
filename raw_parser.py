@@ -1,4 +1,11 @@
+# Python program to find the k most frequent words
+# from data set
+from collections import Counter
+from confidentiality_clause import CC_SECRETS
+
 import re
+
+import string
 
 """ This should
 1. read the raw whats app file
@@ -7,14 +14,64 @@ import re
 4. create a hash to avoid/merge duplicate messages
 """
 
+POST_COUNTER = 1
+
 ## loading data (IOS chat specific)
 def startsWithDateAndTime(s):
+    """
+    ## iOS 24h format
+    [21/02/19, 09:01:59] FName LName: Haha yes.
+    ## Android 12h format
+    30/06/16, 11:26 am - FName LName: Very Good
+    """
+
     #pattern = '^\[([0-9]+)([\/-])([0-9]+)([\/-])([0-9]+)[,]? ([0-9]+):([0-9][0-9]):([0-9][0-9])[ ]?(AM|PM|am|pm)?\]'
-    pattern = '^\[([0-9][0-9])([\/-])([0-9][0-9])([\/-])([0-9][0-9])[,]? ([0-9][0-9]):([0-9][0-9]):([0-9][0-9])[ ]?(AM|PM|am|pm)?\]'
+    #pattern = '^\[([0-9][0-9])([\/-])([0-9][0-9])([\/-])([0-9][0-9])[,]? ([0-9][0-9]):([0-9][0-9]):([0-9][0-9])[ ]?(AM|PM|am|pm)?\]'
+    pattern = '^[\[]?\d{2}(\/)\d{2}(\/)\d{2}(, )\d{1,2}(\:)\d{2}(((\:)\d{2})[\]]|([ ](AM|PM|am|pm)))'
     result = re.match(pattern, s)
     if result:
         return True
     return False
+
+def identify_delimiter(data):
+
+    ## 30/06/16, 11:26 am - FName LName: Very Good
+    pattern = '^\d{2}(\/)\d{2}(\/)\d{2}(, )\d{1,2}(\:)\d{2}[ ]?(AM|PM|am|pm)?'
+    result = re.match(pattern, data)
+    if result:
+        return "- "
+
+    ## [21/02/19, 09:01:59] FName LName: Haha yes.
+    pattern = '^[\[]\d{2}(\/)\d{2}(\/)\d{2}(, )\d{2}(\:)\d{2}((\:)\d{2})[\]]'
+    result = re.match(pattern, data)
+    if result:
+        return "] "
+
+def is_confidentiality_clause(data):
+    for token in CC_SECRETS:
+        if re.search(token, data, re.IGNORECASE):
+            return False
+
+    return True
+
+def tag_finder(data):
+    keys = ['finance', 'financial', 'money', 'joke', 'boss', 'fake', 'news', 'covid', 'mother', 'mom', 'husband', 'dad', 'father', 'love', 'marriage', 'wife', 'scam', 'fraud', 'password', 'atm', 'sms']
+    tags = []
+
+    data = data.lower()
+
+    for key in keys:
+        if data.find(key) > -1:
+            tags.append(key)
+
+    for word in data.split():
+        if word[0] == '#':
+            string.digits
+            if len(''.join(i for i in word if i not in list(string.digits + string.punctuation))) >= 2:
+                tags.append(word)
+
+    return tags
+
 
 def FindAuthor(s):
     patterns = [
@@ -33,7 +90,7 @@ def FindAuthor(s):
     return False
 
 def getDataPoint(line):
-    splitLine = line.split('] ')
+    splitLine = line.split(identify_delimiter(line))
     dateTime = splitLine[0]
     if ',' in dateTime:
         date, time = dateTime.split(',')
@@ -48,12 +105,34 @@ def getDataPoint(line):
         author = None
     return date, time, author, message
 
+def identify_language(data):
+    ## One simple way to identify the language is remove all the english alphabets and see if the count of characters reduced
+    eng_char = list(string.ascii_lowercase + string.ascii_uppercase )
+
+    len_v1 = len(data)
+    data = ''.join(i for i in data if i not in eng_char)
+    len_v2 = len(data)
+
+    if (len_v2/len_v1)*100 >= 50:
+        return 'telugu'
+    else:
+        return 'english'
+
 def remove_special_char(data):
-    acceptable_char = list("0123456789")
+    acceptable_char = list(string.digits)
 
     data = ''.join(i for i in data if i in acceptable_char)
 
     return data
+
+def generate_title(data):
+    data = data.replace('<br>', ' ').replace('\n', ' ').replace('\r', ' ').replace('*', ' ')
+
+    ## This will remove all the double and triple spaces and replaec them with a single space
+    data = ' '.join(data.split())
+    ## truncating by 30 is creating abruptly ended words, not looking good
+    ## so lets look for the first space after 30 and then truncate till there
+    return data[0:data.find(' ', 30)]
 
 def create_post(date, time, content):
 
@@ -61,17 +140,42 @@ def create_post(date, time, content):
     time = remove_special_char(time)
 
     date = list(date)
-    date = date[4] + date[5] + date[2] + date[3] + date[0] + date[1]
+    date = '20' + date[4] + date[5] + '-' + date[2] + date[3] + '-' + date[0] + date[1]
 
-    with open('post/post-' + date + time + '.md', encoding="utf-8", mode = 'w') as fp:
+    global POST_COUNTER
+    with open('post/' + date + '-' + 'P' + '%04d'%POST_COUNTER + '.md', encoding="utf-8", mode = 'w') as fp:
+        header = []
+        header.append('---')
+        header.append('\n')
+        header.append('layout: post')
+        header.append('\n')
+        header.append('title: ' + generate_title(content))
+        #header.append('title: ' + date + ' ' + time)
+        header.append('\n')
+        header.append('author: sal')
+        header.append('\n')
+        header.append('image: assets/images/' + '%04d'%POST_COUNTER + '.jpg')
+        header.append('\n')
+        header.append('categories: [' + identify_language(content) + ']')
+        header.append('\n')
+        header.append('tags: ' + str(tag_finder(content)))
+        header.append('\n')
+        header.append('---')
+        header.append('\n')
+
+        fp.writelines(header)
         fp.write(content)
 
-if __name__ == "__main__":
+        POST_COUNTER += 1
+
+def process_file(file_name):
     parsedData = []
-    with open('data/_chat.txt',  encoding="utf-8") as fp:
+    with open(file_name, encoding="utf-8") as fp:
         messageBuffer = []
         date, time, author = None, None, None
         while True:
+            print("---------------------------------------------------------")
+
             line = fp.readline()
 
             if not line:
@@ -90,26 +194,28 @@ if __name__ == "__main__":
 
             print(line)
 
-            temp = list(line)
-            if len(temp) > 0:
-                print(temp[0])
             if startsWithDateAndTime(line):
                 if len(messageBuffer) > 0:
                     parsedData.append([date, time, author, ' '.join(messageBuffer)])
                     messageBuffer.clear()
                 date, time, author, message = getDataPoint(line)
-                print(time, author, date)
+                print(f"Time: {time}, author:{author}, date:{date}")
                 messageBuffer.append(message)
             else:
-                messageBuffer.append('<br>\n')
+                messageBuffer.append(' <br>\n')
                 messageBuffer.append(line)
 
-
-    temp = set()
     for itr in parsedData:
         #print(itr[3].encode("utf-8"))
-        temp.add(len(itr[3]))
-        if len(itr[3]) >= 1000:
+        if len(itr[3]) >= 5000:
             print(itr[3])
-            create_post(itr[0], itr[1], itr[3])
+            if is_confidentiality_clause(itr[3]):
+                create_post(itr[0], itr[1], itr[3])
+
+## https://stackoverflow.com/questions/27327303/10-most-frequent-words-in-a-string-python
+
+if __name__ == "__main__":
+    files = ['data/mls-sh.txt', 'data/mls-qk.txt']
+    for file in files:
+        process_file(file)
 
