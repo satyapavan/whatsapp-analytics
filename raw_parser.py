@@ -2,6 +2,8 @@
 # from data set
 from collections import Counter
 
+import random
+
 from confidentiality_clause import CC_SECRETS
 
 from difflib import SequenceMatcher
@@ -123,6 +125,10 @@ def is_confidentiality_clause(data):
 
     return True
 
+def get_author():
+    authors = ['author-1', 'author-2', 'author-3', 'author-4']
+    return authors[int(random.random() * len(authors))]
+
 def tag_finder(data):
     keys = ['finance', 'financial', 'money', 'joke', 'boss', 'fake', 'news', 'covid', 'mother', 'mom', 'husband', 'dad', 'father', 'love', 'marriage', 'wife', 'scam', 'fraud', 'password', 'atm', 'sms']
     tags = []
@@ -221,7 +227,7 @@ def create_post(date, time, content):
         header.append('title: ' + generate_title(content))
         #header.append('title: ' + date + ' ' + time)
         header.append('\n')
-        header.append('author: sal')
+        header.append('author: ' + get_author())
         header.append('\n')
         header.append('image: assets/images/' + '%04d'%POST_COUNTER + '.jpg')
         header.append('\n')
