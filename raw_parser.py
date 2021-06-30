@@ -39,9 +39,28 @@ def startsWithDateAndTime(s):
         return True
     return False
 
+def convert_date_ddmmyy_to_yyyymmdd(date):
+    date = list(date)
+    date = '20' + date[4] + date[5] + '-' + date[2] + date[3] + '-' + date[0] + date[1]
+    return date
+
+def sort_content():
+    global parsedData
+
+    ## Usually this doESn"t need a function by iteself. BUT SINCE WE ARE GOING TO USE A FANCY IMplementAtion< this would be needing one
+
+    for itr in parsedData:
+        print(f'BEFORE Printing {itr[0]}')
+    parsedData.sort(key = lambda itr : convert_date_ddmmyy_to_yyyymmdd(remove_special_char(itr[0])))
+    for itr in parsedData:
+        print(f'AFTER Printing {itr[0]}')
+
+
 def clear_dups():
     global parsedData
 
+
+    ### Simpler way to remove dups, just create a key with the content and boom!
 
     get_unique_dict = {}
 
@@ -56,27 +75,31 @@ def clear_dups():
 
     print(f'Length after dict check: {len(parsedData)}')
 
-    newParsedData = parsedData
+    return
 
-    print(len(parsedData), len(newParsedData))
+    unique_ParsedData = []
+
+    print(len(parsedData), len(unique_ParsedData))
+
+    ### CPU intensive way by looping n^2 times to find dups ;-)
 
     for outerItr in range(len(parsedData)):
-        no_match_count = 0
-        for innerItr in range(outerItr+1, len(parsedData)):
+        is_dup = False
+        for innerItr in range(len(unique_ParsedData)):
             print(f'Outer{outerItr} - Inner{innerItr} - Length{len(parsedData)}')
-            if SequenceMatcher(None, parsedData[outerItr][3], parsedData[innerItr][3]).quick_ratio() >= float(0.9):
-                no_match_count += 1
+            if SequenceMatcher(None, parsedData[outerItr][3], unique_ParsedData[innerItr][3]).quick_ratio() >= float(0.9):
+                is_dup = True
                 print("DUPSSS")
-                print(parsedData[innerItr][3], parsedData[outerItr][3])
+                print(parsedData[outerItr][3], unique_ParsedData[innerItr][3])
                 break
 
-        if no_match_count == 0:
-            newParsedData.append(parsedData[outerItr])
+        if not is_dup:
+            unique_ParsedData.append(parsedData[outerItr])
         else:
             print("Duplicate found")
 
     parsedData.clear()
-    parsedData = newParsedData
+    parsedData = unique_ParsedData
 
 
 def identify_delimiter(data):
@@ -186,8 +209,7 @@ def create_post(date, time, content):
     date = remove_special_char(date)
     time = remove_special_char(time)
 
-    date = list(date)
-    date = '20' + date[4] + date[5] + '-' + date[2] + date[3] + '-' + date[0] + date[1]
+    date = convert_date_ddmmyy_to_yyyymmdd(date)
 
     global POST_COUNTER
     with open('post/' + date + '-' + 'P' + '%04d'%POST_COUNTER + '.md', encoding="utf-8", mode = 'w') as fp:
@@ -259,15 +281,10 @@ if __name__ == "__main__":
     for file in files:
         process_file(file)
 
-    ## TODO: check how to remove entries while iterating from it
-
     tempParsedData = []
     print(f'Length before len check: {len(parsedData)}')
     for itr in parsedData:
-        if len(itr[3]) <= 3000:
-            print(f'Removing {len(itr[3])} - {itr[3]}')
-            parsedData.remove(itr)
-        else:
+        if len(itr[3]) >= 3000:
             tempParsedData.append(itr)
             print(f'NOT Removing {len(itr[3])} - {itr[3]}')
 
@@ -280,6 +297,9 @@ if __name__ == "__main__":
     print(f'Length after len check: {len(parsedData)}')
     clear_dups()
     print(f'Length after dups check: {len(parsedData)}')
+
+    ### Now that we have put the data into keys and sorted them by content, lets sort them back using timestamps
+    sort_content()
 
     for itr in parsedData:
         #print(itr[3].encode("utf-8"))
