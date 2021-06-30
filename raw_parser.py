@@ -1,10 +1,14 @@
 # Python program to find the k most frequent words
 # from data set
 from collections import Counter
+
 from confidentiality_clause import CC_SECRETS
 
-import re
+from difflib import SequenceMatcher
 
+## For regex
+import re
+## For avoiding a-z, A-Z, 0-9 and punctuation typing
 import string
 
 """ This should
@@ -15,6 +19,8 @@ import string
 """
 
 POST_COUNTER = 1
+parsedData = []
+
 
 ## loading data (IOS chat specific)
 def startsWithDateAndTime(s):
@@ -32,6 +38,30 @@ def startsWithDateAndTime(s):
     if result:
         return True
     return False
+
+def clear_dups():
+    global parsedData
+    newParsedData = parsedData
+
+    print(len(parsedData), len(newParsedData))
+
+    for outerItr in range(len(parsedData)):
+        no_match_count = 0
+        for innerItr in range(outerItr+1, len(parsedData)):
+            print(f'Outer{outerItr} - Inner{innerItr} - Length{len(parsedData)}')
+            if SequenceMatcher(None, parsedData[outerItr][3], parsedData[innerItr][3]).quick_ratio() >= float(0.9):
+                no_match_count += 1
+                print(parsedData[innerItr][3], parsedData[outerItr][3])
+                break
+
+        if no_match_count == 0:
+            newParsedData.append(parsedData[outerItr])
+        else:
+            print("Duplicate found")
+
+    parsedData.clear()
+    parsedData = newParsedData
+
 
 def identify_delimiter(data):
 
@@ -126,6 +156,7 @@ def remove_special_char(data):
     return data
 
 def generate_title(data):
+    return 'Post-' + '%04d' % POST_COUNTER
     data = data.replace('<br>', ' ').replace('\n', ' ').replace('\r', ' ').replace('*', ' ')
 
     ## This will remove all the double and triple spaces and replaec them with a single space
@@ -169,7 +200,7 @@ def create_post(date, time, content):
         POST_COUNTER += 1
 
 def process_file(file_name):
-    parsedData = []
+    global parsedData
     with open(file_name, encoding="utf-8") as fp:
         messageBuffer = []
         date, time, author = None, None, None
@@ -205,13 +236,6 @@ def process_file(file_name):
                 messageBuffer.append(' <br>\n')
                 messageBuffer.append(line)
 
-    for itr in parsedData:
-        #print(itr[3].encode("utf-8"))
-        if len(itr[3]) >= 5000:
-            print(itr[3])
-            if is_confidentiality_clause(itr[3]):
-                create_post(itr[0], itr[1], itr[3])
-
 ## https://stackoverflow.com/questions/27327303/10-most-frequent-words-in-a-string-python
 
 if __name__ == "__main__":
@@ -219,3 +243,18 @@ if __name__ == "__main__":
     for file in files:
         process_file(file)
 
+    print(f'Length before len check: {len(parsedData)}')
+    for itr in parsedData:
+        if len(itr[3]) <= 3000:
+            parsedData.remove(itr)
+
+    print(f'Length after len check: {len(parsedData)}')
+    clear_dups()
+    print(f'Length after dups check: {len(parsedData)}')
+
+    for itr in parsedData:
+        #print(itr[3].encode("utf-8"))
+        if len(itr[3]) >= 3000:
+            print(itr[3])
+            if is_confidentiality_clause(itr[3]):
+                create_post(itr[0], itr[1], itr[3])
