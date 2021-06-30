@@ -41,6 +41,21 @@ def startsWithDateAndTime(s):
 
 def clear_dups():
     global parsedData
+
+
+    get_unique_dict = {}
+
+    for data in parsedData:
+        if data[3] not in get_unique_dict.keys():
+            get_unique_dict[data[3]] = data
+
+    parsedData.clear()
+
+    for k, v in get_unique_dict.items():
+        parsedData.append(v)
+
+    print(f'Length after dict check: {len(parsedData)}')
+
     newParsedData = parsedData
 
     print(len(parsedData), len(newParsedData))
@@ -51,6 +66,7 @@ def clear_dups():
             print(f'Outer{outerItr} - Inner{innerItr} - Length{len(parsedData)}')
             if SequenceMatcher(None, parsedData[outerItr][3], parsedData[innerItr][3]).quick_ratio() >= float(0.9):
                 no_match_count += 1
+                print("DUPSSS")
                 print(parsedData[innerItr][3], parsedData[outerItr][3])
                 break
 
@@ -243,10 +259,23 @@ if __name__ == "__main__":
     for file in files:
         process_file(file)
 
+    ## TODO: check how to remove entries while iterating from it
+
+    tempParsedData = []
     print(f'Length before len check: {len(parsedData)}')
     for itr in parsedData:
         if len(itr[3]) <= 3000:
+            print(f'Removing {len(itr[3])} - {itr[3]}')
             parsedData.remove(itr)
+        else:
+            tempParsedData.append(itr)
+            print(f'NOT Removing {len(itr[3])} - {itr[3]}')
+
+    parsedData.clear() 
+    parsedData = tempParsedData
+
+    for itr in parsedData:
+        print(f'AFTER DELETING 3000: {len(itr[3])} - {itr}')
 
     print(f'Length after len check: {len(parsedData)}')
     clear_dups()
