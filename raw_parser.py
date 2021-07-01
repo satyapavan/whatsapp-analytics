@@ -3,6 +3,8 @@
 from collections import Counter
 
 import random
+import os
+import fnmatch
 
 from confidentiality_clause import CC_SECRETS
 
@@ -57,10 +59,29 @@ def sort_content():
     for itr in parsedData:
         print(f'AFTER Printing {itr[0]}')
 
+def filter_by_length():
+    global parsedData
+    tempParsedData = []
+    print(f'Length before filter_by_length: {len(parsedData)}')
+
+    for itr in parsedData:
+        if len(itr[3]) >= 500:
+            tempParsedData.append(itr)
+            print(f'NOT Removing {len(itr[3])} - {itr[3]}')
+
+    parsedData.clear() 
+    parsedData = tempParsedData
+
+    print(f'Length after filter_by_length: {len(parsedData)}')
+
+    for itr in parsedData:
+        print(f'AFTER DELETING 3000: {len(itr[3])} - {itr}')
+
 
 def clear_dups():
     global parsedData
 
+    print(f'Length before dups check: {len(parsedData)}')
 
     ### Simpler way to remove dups, just create a key with the content and boom!
 
@@ -103,6 +124,8 @@ def clear_dups():
     parsedData.clear()
     parsedData = unique_ParsedData
 
+    print(f'Length after dups check: {len(parsedData)}')
+
 
 def identify_delimiter(data):
 
@@ -141,7 +164,6 @@ def tag_finder(data):
 
     for word in data.split():
         if word[0] == '#':
-            string.digits
             if len(''.join(i for i in word if i not in list(string.digits + string.punctuation))) >= 2:
                 tags.append(word)
 
@@ -182,16 +204,32 @@ def getDataPoint(line):
 
 def identify_language(data):
     ## One simple way to identify the language is remove all the english alphabets and see if the count of characters reduced
-    eng_char = list(string.ascii_lowercase + string.ascii_uppercase )
+    ENG_CHAR = list(string.ascii_lowercase + string.ascii_uppercase )
 
     len_v1 = len(data)
-    data = ''.join(i for i in data if i not in eng_char)
+    data = ''.join(i for i in data if i not in ENG_CHAR)
     len_v2 = len(data)
 
+    language = ''
     if (len_v2/len_v1)*100 >= 50:
-        return 'telugu'
+        language = 'telugu'
     else:
-        return 'english'
+        language = 'english'
+
+    ### Let's see how long it will take to read the content
+
+    read_time = ''
+
+    if len(data) <=500:
+        read_time = '60 sec read'
+    elif len(data) <= 2000:
+        read_time = '2 min read'
+    elif len(data) <= 6000:
+        read_time = '5 min read'
+    else:
+        read_time = 'Aggggh read'
+
+    return [language, read_time]
 
 def remove_special_char(data):
     acceptable_char = list(string.digits)
@@ -229,9 +267,9 @@ def create_post(date, time, content):
         header.append('\n')
         header.append('author: ' + get_author())
         header.append('\n')
-        header.append('image: assets/images/' + '%04d'%POST_COUNTER + '.jpg')
+        header.append('image: assets/images/' + '%04d'%((POST_COUNTER%300)+1) + '.jpg')
         header.append('\n')
-        header.append('categories: [' + identify_language(content) + ']')
+        header.append('categories: ' + str(identify_language(content)) )
         header.append('\n')
         header.append('tags: ' + str(tag_finder(content)))
         header.append('\n')
@@ -283,33 +321,25 @@ def process_file(file_name):
 ## https://stackoverflow.com/questions/27327303/10-most-frequent-words-in-a-string-python
 
 if __name__ == "__main__":
-    files = ['data/mls-sh.txt', 'data/mls-qk.txt']
+
+    files = []
+    for file_name in os.listdir('data/'):
+        if fnmatch.fnmatch(file_name, 'WhatsApp*.txt'):
+            files.append('data/' + file_name)
+
+    print(files)
+
     for file in files:
         process_file(file)
 
-    tempParsedData = []
-    print(f'Length before len check: {len(parsedData)}')
-    for itr in parsedData:
-        if len(itr[3]) >= 3000:
-            tempParsedData.append(itr)
-            print(f'NOT Removing {len(itr[3])} - {itr[3]}')
+    filter_by_length()
 
-    parsedData.clear() 
-    parsedData = tempParsedData
-
-    for itr in parsedData:
-        print(f'AFTER DELETING 3000: {len(itr[3])} - {itr}')
-
-    print(f'Length after len check: {len(parsedData)}')
     clear_dups()
-    print(f'Length after dups check: {len(parsedData)}')
 
     ### Now that we have put the data into keys and sorted them by content, lets sort them back using timestamps
     sort_content()
 
     for itr in parsedData:
-        #print(itr[3].encode("utf-8"))
-        if len(itr[3]) >= 3000:
-            print(itr[3])
-            if is_confidentiality_clause(itr[3]):
-                create_post(itr[0], itr[1], itr[3])
+        print(itr[3])
+        if is_confidentiality_clause(itr[3]):
+            create_post(itr[0], itr[1], itr[3])
