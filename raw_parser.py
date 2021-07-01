@@ -153,7 +153,7 @@ def get_author():
     return authors[int(random.random() * len(authors))]
 
 def tag_finder(data):
-    keys = ['finance', 'financial', 'money', 'joke', 'boss', 'fake', 'news', 'covid', 'mother', 'mom', 'husband', 'dad', 'father', 'love', 'marriage', 'wife', 'scam', 'fraud', 'password', 'atm', 'sms', 'pakistan', 'flood', 'india', 'america', 'engineer', 'job', 'government', 'modi']
+    keys = ['finance', 'financial', 'money', 'joke', 'boss', 'fake', 'news', 'covid', 'mother', 'mom', 'husband', 'dad', 'father', 'love', 'marriage', 'wife', 'scam', 'fraud', 'password', 'atm', 'sms', 'pakistan', 'flood', 'india', 'america', 'engineer', 'job', 'government', 'modi', 'doctor']
     tags = []
 
     data = data.lower()
