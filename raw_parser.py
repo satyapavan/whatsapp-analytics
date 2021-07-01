@@ -153,7 +153,7 @@ def get_author():
     return authors[int(random.random() * len(authors))]
 
 def tag_finder(data):
-    keys = ['finance', 'financial', 'money', 'joke', 'boss', 'fake', 'news', 'covid', 'mother', 'mom', 'husband', 'dad', 'father', 'love', 'marriage', 'wife', 'scam', 'fraud', 'password', 'atm', 'sms']
+    keys = ['finance', 'financial', 'money', 'joke', 'boss', 'fake', 'news', 'covid', 'mother', 'mom', 'husband', 'dad', 'father', 'love', 'marriage', 'wife', 'scam', 'fraud', 'password', 'atm', 'sms', 'pakistan', 'flood', 'india', 'america', 'engineer', 'job', 'government', 'modi']
     tags = []
 
     data = data.lower()
@@ -166,6 +166,8 @@ def tag_finder(data):
         if word[0] == '#':
             if len(''.join(i for i in word if i not in list(string.digits + string.punctuation))) >= 2:
                 tags.append(word)
+
+    tags.append(identify_language(data))
 
     return tags
 
@@ -202,6 +204,22 @@ def getDataPoint(line):
     message = ' '.join(splitMessage[1:])
     return date, time, author, message
 
+def category_finder(data):
+    ### Let's see how long it will take to read the content
+
+    read_time = ''
+
+    if len(data) <=500:
+        read_time = '60 sec read'
+    elif len(data) <= 2000:
+        read_time = '2 min read'
+    elif len(data) <= 5000:
+        read_time = '5 min read'
+    else:
+        read_time = 'Long read'
+
+    return [read_time]
+
 def identify_language(data):
     ## One simple way to identify the language is remove all the english alphabets and see if the count of characters reduced
     ENG_CHAR = list(string.ascii_lowercase + string.ascii_uppercase )
@@ -216,20 +234,7 @@ def identify_language(data):
     else:
         language = 'english'
 
-    ### Let's see how long it will take to read the content
-
-    read_time = ''
-
-    if len(data) <=500:
-        read_time = '60 sec read'
-    elif len(data) <= 2000:
-        read_time = '2 min read'
-    elif len(data) <= 6000:
-        read_time = '5 min read'
-    else:
-        read_time = 'Aggggh read'
-
-    return [language, read_time]
+    return language
 
 def remove_special_char(data):
     acceptable_char = list(string.digits)
@@ -267,11 +272,11 @@ def create_post(date, time, content):
         header.append('\n')
         header.append('author: ' + get_author())
         header.append('\n')
-        header.append('image: assets/images/' + '%04d'%((POST_COUNTER%300)+1) + '.jpg')
+        header.append('image: assets/images/' + '%04d'%(300 if (POST_COUNTER%300) == 0 else (POST_COUNTER%300)) + '.jpg')
         header.append('\n')
-        header.append('categories: ' + str(identify_language(content)) )
+        header.append('categories: ' + str(category_finder(content)) )
         header.append('\n')
-        header.append('tags: ' + str(tag_finder(content)))
+        header.append('tags: ' + str(tag_finder(content) + [date[0:4]]))
         header.append('\n')
         header.append('---')
         header.append('\n')
